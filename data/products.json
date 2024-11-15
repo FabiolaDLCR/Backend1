@@ -1,1 +1,27 @@
-[]
+[
+    {
+      "id": "1",
+      "title": "Collar Artemisa",
+      "description": "Material acero inoxidable y concha nacar",
+      "price": 690,
+      "status": true,
+      "stock": 15,
+      "category": "Collares",
+      "thumbnails": 
+      [
+        "https://images.unsplash.com/photo-1610694955371-d4a3e0ce4b52?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+      ]
+      },
+    {
+      "id": "2",
+      "title": "Collar Diana",
+      "description": "Material acero inoxidable y obsidiana",
+      "price": 650,
+      "status": true,
+      "stock": 15,
+      "category": "Collares",
+      "thumbnails":
+       ["https://images.unsplash.com/photo-1614173392817-cb83a0a7c84c?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"]
+    }
+  ]
+  
