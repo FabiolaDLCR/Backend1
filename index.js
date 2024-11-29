@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import handlebars from 'express-handlebars';
 import path from 'path';
 import productsRouter from './src/routes/products.js';
-import cartsRouter from './src/routes/cart.js';
+import cartsRouter from './src/routes/carts.js';
 
 const app = express();
 const httpServer = createServer(app);
