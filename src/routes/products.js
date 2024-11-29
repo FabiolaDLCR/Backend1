@@ -1,13 +1,24 @@
-import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
+import express from 'express';
+import ProductManager from '../managers/ProductManager';
 
-const router = Router();
+const router = express.Router();
+
 const productsFilePath = path.resolve('data/products.json');
 const readProducts = () => {
   const data = fs.readFileSync(productsFilePath, 'utf-8');
   return JSON.parse(data);
 };
+
+router.get('/', async (req, res) => {
+    const products = await ProductManager.getProducts();
+    let html = `<h1>Lista de Productos</h1><ul>`;
+    products.forEach(product => {
+      html += `<li><strong>${product.title}</strong>: ${product.description} - $${product.price}</li>`;
+    });
+    html += `</ul>`;
+    res.send(html);
+  });
+  
 //escribir nuevos productos
 const writeProducts = (products) => {
   fs.writeFileSync(productsFilePath, JSON.stringify(products, null, 2));
@@ -35,7 +46,7 @@ router.get('/:pid', (req, res) => {
   }
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { title, description, code, price, stock, category, thumbnails = [] } = req.body;
   const products = readProducts();
 
@@ -56,7 +67,7 @@ router.post('/', (req, res) => {
   res.status(201).json(newProduct);
 });
 
-router.put('/:pid', (req, res) => {
+router.put('/:pid', async (req, res) => {
   const { pid } = req.params;
   const updateFields = req.body;
   const products = readProducts();
@@ -74,7 +85,7 @@ router.put('/:pid', (req, res) => {
 });
 
 // Eliminar un producto por ID
-router.delete('/:pid', (req, res) => {
+router.delete('/:pid', async (req, res) => {
   const { pid } = req.params;
   let products = readProducts();
 

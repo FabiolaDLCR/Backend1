@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/main.css">
+  <title>Home</title>
+</head>
+<body>
+  <section class="contenedor_head">
+    <h1>Lista de Productos</h1>
+    <button id="refresh-button">Recargar Productos</button>
+  </section>
+  
+  <section class="contenedor_productos">
+    <ul>
+      {{#each products}}
+      <div class="contenedor_li">
+        <li>
+          <div>ID: {{this.id}}</div>
+          <div>Titulo: {{this.title}}</div>
+          <div>Descripcion: {{this.description}}</div>
+          <div>Codigo: {{this.code}}</div>
+          <div>Precio: ${{this.price}}</div>
+          <div>Status: {{this.status}}</div>
+          <div>Stock: {{this.stock}}</div>
+          <div>Categoria: {{this.category}}</div>
+          <div>Imagen: {{this.thumbnails}}</div>
+        </li>
+      </div>
+      {{/each}}
+    </ul>
+  </section>
+  <script>
+    const refreshButton = document.getElementById('refresh-button');
+    refreshButton.addEventListener('click', () => {
+    location.reload();
+    });
+  </script>
+</body>
+</html>

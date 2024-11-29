@@ -1,8 +1,7 @@
-import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
+import express from 'express';
+import CartManager from '../managers/CartManager';
 
-const router = Router();
+const router = express.Router();
 const cartsFilePath = path.resolve('data/carts.json');
 const productsFilePath = path.resolve('data/products.json');
 
