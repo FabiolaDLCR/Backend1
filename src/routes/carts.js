@@ -1,40 +1,48 @@
-import { Router } from 'express';
-import fs from 'fs/promises';
-import path from 'path';
+import express from 'express';
+import CartManager from '../managers/CartManager.js';
 
-const router = Router();
-const cartsFilePath = path.join(process.cwd(), 'data', 'cart.json');
+const router = express.Router();
 
-const readCartsFile = async () => JSON.parse(await fs.readFile(cartsFilePath, 'utf-8'));
-const writeCartsFile = async (data) => await fs.writeFile(cartsFilePath, JSON.stringify(data, null, 2));
 
+// Ruta POST /api/carts
 router.post('/', async (req, res) => {
-    const carts = await readCartsFile();
-    const newCart = { id: `${Date.now()}`, products: [] };
-    carts.push(newCart);
-    await writeCartsFile(carts);
-    res.status(201).json(newCart);
-});
-
-router.get('/:cid', async (req, res) => {
-    const carts = await readCartsFile();
-    const cart = carts.find(c => c.id === req.params.cid);
-    cart ? res.json(cart) : res.status(404).send('Cart not found');
-});
-
-router.post('/:cid/product/:pid', async (req, res) => {
-    const carts = await readCartsFile();
-    const cartIndex = carts.findIndex(c => c.id === req.params.cid);
-    if (cartIndex === -1) return res.status(404).send('Cart not found');
-
-    const productIndex = carts[cartIndex].products.findIndex(p => p.product === req.params.pid);
-    if (productIndex === -1) {
-        carts[cartIndex].products.push({ product: req.params.pid, quantity: 1 });
-    } else {
-        carts[cartIndex].products[productIndex].quantity++;
+    try {
+      const newCart = await CartManager.createCart();
+      res.status(201).json(newCart);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
-    await writeCartsFile(carts);
-    res.json(carts[cartIndex]);
-});
-
-export default router;
+  });
+  
+  // Ruta GET /api/carts
+  router.get('/', async (req, res) => {
+    try {
+      const carts = await CartManager.getCarts();
+      res.json(carts);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Ruta GET /api/carts/:cid
+  router.get('/:cid', async (req, res) => {
+    try {
+      const cart = await CartManager.getCartById(req.params.cid);
+      if (!cart) return res.status(404).json({ message: 'Carrito no encontrado' });
+      res.json(cart.products);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Ruta POST /api/carts/:cid/product/:pid
+  router.post('/:cid/product/:pid', async (req, res) => {
+    try {
+      const updatedCart = await CartManager.addProductToCart(req.params.cid, req.params.pid);
+      res.status(201).json(updatedCart);
+    } catch (error) {
+      res.status(404).json({ message: error.message });
+    }
+  });
+  
+  export default router;
