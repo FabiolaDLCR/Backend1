@@ -16,15 +16,12 @@
       {{#each products}}
       <div class="contenedor_li">
         <li>
-          <div>ID: {{this.id}}</div>
-          <div>Titulo: {{this.title}}</div>
+          <img src="{{this.thumbnail}}" alt="{{this.title}}" style="max-width: 200px; height: auto;">
+          <div> {{this.title}}</div>
           <div>Descripcion: {{this.description}}</div>
-          <div>Codigo: {{this.code}}</div>
           <div>Precio: ${{this.price}}</div>
-          <div>Status: {{this.status}}</div>
           <div>Stock: {{this.stock}}</div>
           <div>Categoria: {{this.category}}</div>
-          <div>Imagen: {{this.thumbnails}}</div>
         </li>
       </div>
       {{/each}}
