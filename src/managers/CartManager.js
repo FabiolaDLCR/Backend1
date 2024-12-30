@@ -1,48 +1,148 @@
-import fs from 'fs';
-import path from 'path';
+import { isValidID } from "../config/mongoose.config.js";
+import CartModel from "../models/cart.model.js";
+import ErrorManager from "./ErrorManager.js";
 
-const CARTS_PATH = path.resolve('src/data/cart.json');
+export default class CartManager {
+  #cartModel;
 
-class CartManager {
-  async getCarts() {
-    if (!fs.existsSync(CARTS_PATH)) {
-      return [];
-    }
-    const data = await fs.promises.readFile(CARTS_PATH, 'utf-8');
-    return JSON.parse(data);
+  constructor() {
+      this.#cartModel = CartModel;
   }
 
-  async saveCarts(carts) {
-    await fs.promises.writeFile(CARTS_PATH, JSON.stringify(carts, null, 2));
+  async #findOneById(id) {
+      if (!isValidID(id)) {
+          throw new ErrorManager("ID inválido", 400);
+      }
+
+      const cart = await this.#cartModel.findById(id).populate("products.product");
+
+      if (!cart) {
+          throw new ErrorManager("ID no encontrado", 404);
+      }
+
+      return cart;
   }
 
-  async createCart() {
-    const carts = await this.getCarts();
-    const newCart = { id: Date.now().toString(), products: [] };
-    carts.push(newCart);
-    await this.saveCarts(carts);
-    return newCart;
+  async getAll(params) {
+      try {
+          const paginationOptions = {
+              limit: params?.limit || 10,
+              page: params?.page || 1,
+              populate: "products.product",
+              lean: true,
+          };
+
+          return await this.#cartModel.paginate({}, paginationOptions);
+      } catch (error) {
+          throw ErrorManager.handleError(error);
+      }
   }
 
-  async getCartById(id) {
-    const carts = await this.getCarts();
-    return carts.find(c => c.id === id);
+  async getOneById(id) {
+      try {
+          return await this.#findOneById(id);
+      } catch (error) {
+          throw ErrorManager.handleError(error);
+      }
   }
 
-  async addProductToCart(cartId, productId) {
-    const carts = await this.getCarts();
-    const cart = carts.find(c => c.id === cartId);
-    if (!cart) throw new Error('Carrito no encontrado');
+  async insertOne(data) {
+      try {
+          const cart = await this.#cartModel.create(data);
+          return cart;
+      } catch (error) {
+          throw ErrorManager.handleError(error);
+      }
+  }
 
-    const product = cart.products.find(p => p.product === productId);
-    if (product) {
-      product.quantity += 1;
-    } else {
-      cart.products.push({ product: productId, quantity: 1 });
-    }
-    await this.saveCarts(carts);
-    return cart;
+  async addOneProduct(id, productId) {
+      try {
+          const cart = await this.#findOneById(id);
+          const productIndex = cart.products.findIndex((item) => item.product._id.toString() === productId);
+
+          if (productIndex >= 0) {
+              cart.products[productIndex].quantity++;
+          } else {
+              cart.products.push({ product: productId, quantity: 1 });
+          }
+
+          await cart.save();
+
+          return cart;
+      } catch (error) {
+          throw new ErrorManager(error.message, error.code);
+      }
+  }
+
+  async deleteOneProduct(id, productId) {
+      try {
+          const cart = await this.#findOneById(id);
+          const productIndex = cart.products.findIndex((item) => item.product._id.toString() === productId);
+
+          if (productIndex < 0) {
+              throw new ErrorManager("El producto no existe en el carrito", 404);
+          }
+
+          const product= cart.products[productIndex];
+          if (product.quantity > 1) {
+              cart.products[productIndex].quantity--;
+          } else {
+              cart.products.splice(productIndex, 1);
+          }
+
+          await cart.save();
+
+          return cart;
+      } catch (error) {
+          throw new ErrorManager(error.message, error.code);
+      }
+  }
+
+  async deleteOneById(id) {
+      try {
+          const cart = await this.#findOneById(id);
+
+          if (!cart) {
+              throw ErrorManager.handleError(error);
+          }
+
+          await this.#cartModel.findByIdAndDelete(id);
+
+          return cart;
+      } catch (error) {
+          throw ErrorManager.handleError(error);
+      }
+
+  }
+
+  async deleteAllProductsByProductId(id, productId) {
+      try {
+          const cart = await this.#findOneById(id);
+
+          cart.products = cart.products.filter((item) => item.product._id.toString() !== productId);
+
+          await cart.save();
+
+          return cart;
+      } catch (error) {
+          throw new ErrorManager(error.message, error.code);
+      }
+  }
+
+  async removeAllProductsById(id) {
+      try {
+          const cart = await this.#findOneById(id);
+
+          if (!cart) {
+              throw ErrorManager.handleError(error);
+          }
+
+          cart.products = [];
+          await cart.save();
+
+          return cart;
+      } catch (error) {
+          throw ErrorManager.handleError(error);
+      }
   }
 }
-
-export default new CartManager();

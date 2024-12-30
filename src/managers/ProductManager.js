@@ -1,53 +1,100 @@
-import fs from 'fs';
-import path from 'path';
+import ErrorManager from "./ErrorManager.js";
+import { isValidID } from "../config/mongoose.config.js";
 
-const PRODUCTS_PATH = path.resolve('src/data/products.json');
+export default class ProductManager {
+    #productModel;
 
-class ProductManager {
-  async getProducts() {
-    if (!fs.existsSync(PRODUCTS_PATH)) {
-      return [];
+    constructor() {
+        this.#productModel = ProductModel;
     }
-    const data = await fs.promises.readFile(PRODUCTS_PATH, 'utf-8');
-    return JSON.parse(data);
-  }
 
-  async saveProducts(products) {
-    await fs.promises.writeFile(PRODUCTS_PATH, JSON.stringify(products, null, 2));
-  }
+    async #findOneById(id) {
+        if (!isValidID(id)) {
+            throw new ErrorManager("El ID no es válido", 400);
+        }
 
-  async addProduct(product) {
-    const products = await this.getProducts();
-    if (products.some(p => p.code === product.code)) {
-      throw new Error(`El código ${product.code} ya existe.`);
+        const product = await this.#productModel.findById(id);
+
+        if (!product) {
+            throw new ErrorManager("ID no encontrado", 404);
+        }
+
+        return product;
     }
-    product.id = `${Date.now().toString().slice(-4)}`;
-    products.push(product);
-    await this.saveProducts(products);
-    return product;
-  }
 
-  async getProductById(id) {
-    const products = await this.getProducts();
-    return products.find(p => p.id === id);
-  }
+    async getAll(params) {
+        try {
+            const $and = [];
 
-  async updateProduct(id, updatedData) {
-    const products = await this.getProducts();
-    const index = products.findIndex(p => p.id === id);
-    if (index === -1) throw new Error('El producto no existe');
-    products[index] = { ...products[index], ...updatedData };
-    await this.saveProducts(products);
-    return products[index];
-  }
+            if (params?.title) $and.push({ title: { $regex: params.title, $options: "i" } });
+            const filters = $and.length > 0 ? { $and } : {};
 
-  async deleteProduct(id) {
-    const products = await this.getProducts();
-    const index = products.findIndex(p => p.id === id);
-    if (index === -1) throw new Error('Producto no encontrado');
-    products.splice(index, 1);
-    await this.saveProducts(products);
-  }
+            const sort = {
+                asc: { title: 1 },
+                desc: { title: -1 },
+            };
+
+            const paginationOptions = {
+                limit: params?.limit || 5,
+                page: params?.page || 1,
+                sort: sort[params?.sort] ?? {},
+                lean: true,
+            };
+            const result = await this.#productModel.paginate(filters, paginationOptions);
+            result.docs = result.docs || [];
+            return result;
+            // return await this.#productModel.find();
+        } catch (error) {
+            throw ErrorManager.handleError(error);
+        }
+    }
+
+    async getOneById(id) {
+        try {
+            return await this.#findOneById(id);
+        } catch (error) {
+            throw ErrorManager.handleError(error);
+        }
+    }
+
+    async insertOne(data, filename) {
+        try {
+            const product = await this.#productModel.create({
+                ...data,
+                status: convertToBoolean(data.status),
+                thumbnail: filename ?? "image-not-found.jpg",
+            });
+
+            return product;
+        } catch (error) {
+            throw ErrorManager.handleError(error);
+        }
+    }
+
+    async updateOneById(id, data) {
+        try {
+            const product = await this.#findOneById(id);
+            const newValues = {
+                ...product,
+                ...data,
+                status: data.status ? convertToBoolean(data.status) : product.status,
+            };
+
+            product.set(newValues);
+            product.save();
+
+            return product;
+        } catch (error) {
+            throw ErrorManager.handleError(error);
+        }
+    }
+
+    async deleteOneById(id) {
+        try {
+            const product = await this.#findOneById(id);
+            await product.deleteOne();
+        } catch (error) {
+            throw ErrorManager.handleError(error);
+        }
+    }
 }
-
-export default new ProductManager();
